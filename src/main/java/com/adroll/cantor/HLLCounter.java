@@ -3,6 +3,7 @@ package com.adroll.cantor;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.TreeSet;
 
 /** <code>HLLCounter</code> allows for cardinality estimation of 
@@ -337,6 +338,13 @@ public class HLLCounter implements Serializable {
     }
   }
 
+  public void combine(List<HLLCounter> hs) {
+    for(HLLCounter h : hs) {
+      this.combine(h);
+    }
+  }
+
+
   /**
      Reduces the precision from <code>p</code> to <code>q</code>.
 
@@ -466,6 +474,57 @@ public class HLLCounter implements Serializable {
     return (long)Math.round(((double)result)/((double)mink) * totalSize(hs));
   }
 
+
+  public static long intersect(List<HLLCounter> hs) {
+    //We can't actually intersect HLLCounters, but we
+    //can provide an estimate of the size of the
+    //intersection using the MinHash algorithm.
+    if (hs.size() == 0) {
+      return 0;
+    }
+    for (HLLCounter hll : hs) {
+      if (hll.size() == 0) {
+        return 0;
+      }
+    }
+    TreeSet<Long> all = new TreeSet<Long>();
+    int mink = Integer.MAX_VALUE;
+    int maxs = Integer.MIN_VALUE;
+    for(HLLCounter h : hs) {
+      if(h.isIntersectable()) {
+        all.addAll(h.getMinHash());
+        mink = Math.min(mink, h.getK());
+        maxs = Math.max(maxs, h.getMinHash().size());
+      }
+    }
+    mink = maxs < mink ? maxs : mink;
+    int result = 0;
+    for(int i = 0; i < mink; i++) {
+      long l = 0;
+      try {
+        l = all.pollFirst();
+      } catch(NullPointerException e) {
+        //This can happen if k is larger than
+        //the number of insertions.
+        break;
+      }
+      boolean allContain = true;
+      for(HLLCounter h : hs) {
+        if(h.isIntersectable()) {
+          if(!h.getMinHash().contains(l)) {
+            allContain = false;
+            break;
+          }
+        }
+      }
+      if(allContain) {
+        result += 1;
+      }
+    }
+    return (long)Math.round(((double)result)/((double)mink) * totalSize(hs));
+  }
+
+
   /**
      Returns an HLL structure that is the effective union
      of two other HLL structures.
@@ -545,6 +604,16 @@ public class HLLCounter implements Serializable {
     }
     return estimateSize(R, getAlpha(R.length));
   }
+
+
+  private static double totalSize(List<HLLCounter> hs) {
+    byte[] R = new byte[hs.get(0).getByteArray().length];
+    for(int i = 0; i < hs.size(); i++) {
+      R = safeUnion(R, hs.get(i).getByteArray());
+    }
+    return estimateSize(R, getAlpha(R.length));
+  }
+
 
   /**
      Returns an estimate of an integral term in the 
