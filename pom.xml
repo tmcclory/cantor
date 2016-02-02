@@ -52,10 +52,7 @@
 	    <version>2.2</version>
 	    <executions>
 	      <execution>
-		<phase>package</phase>
-		<goals>
-		  <goal>shade</goal>
-		</goals>
+          <phase>package</phase>
 		<configuration>
 		  <createDependencyReducedPom>false</createDependencyReducedPom>
 		  <filters>
