@@ -3,6 +3,7 @@ package com.adroll.cantor;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.TreeSet;
 
@@ -17,7 +18,7 @@ import com.adroll.cantor.HLLCounter;
    deserialization of {@link HLLCounter} objects in a 
    Hadoop framework.
 */
-public class HLLWritable implements Writable {
+public class HLLWritable implements Writable, Serializable {
   
   private static final Logger LOG = LoggerFactory.getLogger(HLLWritable.class);
 
