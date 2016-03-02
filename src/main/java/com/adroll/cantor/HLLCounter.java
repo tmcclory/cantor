@@ -3,6 +3,7 @@ package com.adroll.cantor;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -335,6 +336,12 @@ public class HLLCounter implements Serializable {
   public void combine(HLLCounter ... hs) {
     for(HLLCounter h : hs) {
       this.combine(h);
+    }
+  }
+
+  public void combine(Iterator<HLLCounter> hs) {
+    while(hs.hasNext()) {
+      this.combine(hs.next());
     }
   }
 
