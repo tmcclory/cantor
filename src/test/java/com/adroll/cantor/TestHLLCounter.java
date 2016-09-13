@@ -94,6 +94,12 @@ public class TestHLLCounter {
     //be h3.
     h1.combine(h2);
     assertTrue(h3.size() == h1.size());
+
+    File f = new File("hll.ser");
+    FileOutputStream fos = new FileOutputStream(f);
+    ObjectOutputStream oos = new ObjectOutputStream(fos);
+    oos.writeObject(h3);
+    oos.close();
   }
 
 	@Test
@@ -134,7 +140,7 @@ public class TestHLLCounter {
     r = new Random(123456L);
     HLLCounter big = new HLLCounter((byte)12);
     fillHLLCounter(big, r, 100000);
-    big.fold((byte)8);
+    big.fold((byte) 8);
     
     assertEquals(big.size(), small.size());
 
@@ -145,7 +151,7 @@ public class TestHLLCounter {
     r = new Random(23456L);
     big = new HLLCounter((byte)18);
     fillHLLCounter(big, r, 100000);
-    big.fold((byte)4);
+    big.fold((byte) 4);
     
     assertEquals(big.size(), small.size());
 
@@ -156,7 +162,7 @@ public class TestHLLCounter {
     r = new Random(3456L);
     big = new HLLCounter((byte)16);
     fillHLLCounter(big, r, 100000);
-    big.fold((byte)7);
+    big.fold((byte) 7);
     
     assertEquals(big.size(), small.size());
   }
@@ -195,6 +201,167 @@ public class TestHLLCounter {
     assertEquals(0, HLLCounter.intersect(new HLLCounter(), h0));    
     
   }
+
+  @Test
+  public void test_intersection2() {
+    int k = 53248/2/2;
+    HLLCounter h0 = new HLLCounter(true, k);
+    HLLCounter h1 = new HLLCounter(true, k);
+    HLLCounter h2 = new HLLCounter(true, k);
+    int counter = 0;
+
+    int a = 25000000;
+    int b = 205000;
+    int c = 25000;
+    int d = 25000;
+
+    for (int i = 0; i < a; i++) {
+      h0.put(String.valueOf(i));
+    }
+    counter += a;
+
+    for (int i = 0; i < b; i++) {
+      h1.put(String.valueOf(i+counter));
+    }
+    counter += b;
+
+    for (int i = 0; i< c; i++) {
+      h1.put(String.valueOf(i+counter));
+      counter++;
+    }
+    counter += c;
+
+    // overlap
+    for (int i = 0; i< d; i++) {
+      h0.put(String.valueOf(i+counter));
+      h1.put(String.valueOf(i+counter));
+      h2.put(String.valueOf(i+counter));
+    }
+    counter += d;
+
+    System.out.println(HLLCounter.intersect(h0, h1)); //about 5000
+
+  }
+
+  @Test
+  public void test_intersection_age_buckets() {
+    int k = 53248/2/2;
+    HLLCounter heart_disease = new HLLCounter(true, k);
+    HLLCounter old = new HLLCounter(true, k);
+    HLLCounter young = new HLLCounter(true, k);
+    HLLCounter young_2 = new HLLCounter(true, k);
+    int counter = 0;
+
+    //int heart_disease_size = 1100000;
+    int old_size = 50000000;
+    int young_size = 50000000;
+    int young2_size = 50000000;
+    int old_heart_size = 1000000;
+    int young_heart_size = 500;
+    int young2_heart_size = 500;
+
+    for (int i = 0; i < old_size; i++) {
+      old.put(String.valueOf(i + counter));
+      if (i < old_heart_size) {
+        heart_disease.put(String.valueOf(i+ counter));
+      }
+    }
+    counter += old_size;
+
+    for (int i = 0; i< young_size; i++) {
+      young.put(String.valueOf(i + counter));
+      if (i< young_heart_size) {
+        heart_disease.put(String.valueOf(i+counter));
+      }
+      counter++;
+    }
+    counter += young_size;
+
+    for (int i = 0; i< young2_size; i++) {
+      young_2.put(String.valueOf(i + counter));
+      if (i< young2_heart_size) {
+        heart_disease.put(String.valueOf(i+counter));
+      }
+      counter++;
+    }
+
+
+    System.out.println(HLLCounter.intersect(heart_disease) + " " + heart_disease.size());
+    System.out.println(HLLCounter.intersect(old));
+    System.out.println(HLLCounter.intersect(young));
+
+
+    System.out.println(HLLCounter.intersect(heart_disease, old)); //about 5000
+    System.out.println(HLLCounter.intersect(heart_disease, young)); //about 5000
+    System.out.println(HLLCounter.intersect(heart_disease, young, old)); //about 5000
+
+    young.combine(young_2);
+    System.out.println(HLLCounter.intersect(heart_disease, young ));
+
+  }
+
+  @Test
+  public void test_intersection_sizes() {
+
+  }
+
+  @Test
+  public void test_intersection_banzel() {
+    int k = 53248/2/2;
+    HLLCounter heart_disease = new HLLCounter(true, k);
+    HLLCounter old = new HLLCounter(true, k);
+    HLLCounter young = new HLLCounter(true, k);
+    HLLCounter young_2 = new HLLCounter(true, k);
+    int counter = 0;
+
+    //int heart_disease_size = 1100000;
+    int old_size = 50000000;
+    int young_size = 50000000;
+    int young2_size = 50000000;
+    int old_heart_size = 1000000;
+    int young_heart_size = 500;
+    int young2_heart_size = 500;
+
+    for (int i = 0; i < old_size; i++) {
+      old.put(String.valueOf(i + counter));
+      if (i < old_heart_size) {
+        heart_disease.put(String.valueOf(i+ counter));
+      }
+    }
+    counter += old_size;
+
+    for (int i = 0; i< young_size; i++) {
+      young.put(String.valueOf(i + counter));
+      if (i< young_heart_size) {
+        heart_disease.put(String.valueOf(i+counter));
+      }
+      counter++;
+    }
+    counter += young_size;
+
+    for (int i = 0; i< young2_size; i++) {
+      young_2.put(String.valueOf(i + counter));
+      if (i< young2_heart_size) {
+        heart_disease.put(String.valueOf(i+counter));
+      }
+      counter++;
+    }
+
+
+    System.out.println(HLLCounter.intersect(heart_disease) + " " + heart_disease.size());
+    System.out.println(HLLCounter.intersect(old));
+    System.out.println(HLLCounter.intersect(young));
+
+
+    System.out.println(HLLCounter.intersect(heart_disease, old)); //about 5000
+    System.out.println(HLLCounter.intersect(heart_disease, young)); //about 5000
+    System.out.println(HLLCounter.intersect(heart_disease, young, old)); //about 5000
+
+    young.combine(young_2);
+    System.out.println(HLLCounter.intersect(heart_disease, young ));
+
+  }
+
 
   private void fillHLLCounter(HLLCounter h, Random r, int n) {
     for(int i = 0; i < n; i++) {
